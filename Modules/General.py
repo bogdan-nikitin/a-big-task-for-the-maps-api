@@ -50,11 +50,14 @@ def get_pos(geocode, **kwargs) -> [float, float]:
 
     for k, v in kwargs.items():
         geo_coder_params[k] = v
-        
-    response = perform_request(GEOCODER_API_SERVER, params=geo_coder_params)
-    
-    json_response = response.json()
-    toponym = json_response["response"]["GeoObjectCollection"][
-        "featureMember"][0]["GeoObject"]
-    toponym_coodrinates = toponym["Point"]["pos"]
-    return list(map(float, toponym_coodrinates.split(' ')))
+
+    try:
+        response = perform_request(GEOCODER_API_SERVER, params=geo_coder_params)
+        json_response = response.json()
+        toponym = json_response["response"]["GeoObjectCollection"][
+            "featureMember"][0]["GeoObject"]
+        toponym_coodrinates = toponym["Point"]["pos"]
+        return list(map(float, toponym_coodrinates.split(' ')))
+    except IndexError:
+        print('Некорректные параметры')
+        return [1, 1]
