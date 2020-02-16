@@ -25,12 +25,13 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
         self.map_api_server = MAP_API_SERVER
         self.map_type = 'map'                  # Параметр l
         self.scale = START_SCALE               # Параметр z
-        self.map_pos = [1, 1]  # Параметр ll
+        self.map_pos = [1, 1]                  # Параметр ll
+        self.tags = []                         # Параметр pt
         self.pix_maps = {}  # Словарь с уже загруженными ранее картинками
 
         self.override_map_params()
 
-    def get_pix_map(self, map_type=None, map_pos=None, scale=None):
+    def get_pix_map(self, map_type=None, map_pos=None, scale=None, tags=None):
         """Получение изображения карты."""
 
         # Если в метод не переданы какие-либо параметры, используем текущие
@@ -41,11 +42,14 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
             map_pos = self.map_pos
         if scale is None:
             scale = self.scale
+        if tags is None:
+            tags = self.tags
 
         map_params = {
             "l": map_type,
             'll': ','.join(map(str, map_pos)),
-            'z': str(scale)
+            'z': str(scale),
+            'pt': '~'.join(map(str, tags))
         }
         key = tuple(map_params.values())
         pix_map = self.pix_maps.get(key)
@@ -81,8 +85,10 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
         self.override_map_params()
 
     def get_object(self):
-        self.map_pos = get_pos(self.object_input.text())
-        self.override_map_params()
+        if get_pos(self.object_input.text()):
+            self.map_pos = get_pos(self.object_input.text())
+            self.tags.append(f'{",".join(map(str, self.map_pos))},comma')
+            self.override_map_params()
 
 
 app = QApplication(sys.argv)

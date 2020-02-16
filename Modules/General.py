@@ -60,4 +60,4 @@ def get_pos(geocode, **kwargs) -> [float, float]:
         return list(map(float, toponym_coodrinates.split(' ')))
     except IndexError:
         print('Некорректные параметры')
-        return [1, 1]
+        return None
