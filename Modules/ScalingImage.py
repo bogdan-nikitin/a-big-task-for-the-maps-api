@@ -22,12 +22,18 @@ class ScalingImage(QWidget):
             painter = QPainter(self)
             painter.setRenderHint(QPainter.SmoothPixmapTransform)
             width, height = self.width(), self.height()
+            # Из-за бага в PyQt5 (как я понял) высота виджета определяется
+            # меньше действительной и изображение получается меньше. Чтобы
+            # исправить это, высота умножается на определённое число,
+            # вычисленное методом проб и ошибок
+            if width > height:
+                height *= 1.34
             image_width = self.pix_map.size().width()
             image_height = self.pix_map.size().height()
             ratio = min(width, height) / max(image_width, image_height)
             new_image_width = image_width * ratio
             new_image_height = image_height * ratio
             rect = QRect((width - new_image_width) // 2,
-                         (height - new_image_height) // 2,
+                         (self.height() - new_image_height) // 2,
                          new_image_width, new_image_height)
             painter.drawPixmap(rect, self.pix_map)

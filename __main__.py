@@ -3,39 +3,31 @@ from Modules.General import *
 from PyQt5.QtWidgets import QApplication, QMainWindow
 from UI.UI_MapAppMainWindow import Ui_MapAppMainWindow
 from PyQt5.Qt import QPixmap, QImage, Qt
-from Modules.ScalingImage import ScalingImage
 # from Modules.EasyThreadsQt import queue_thread_qt
 
 
 START_SCALE = 13
+MAP_TYPES = ['map', 'sat']
+GO_NAMES_TYPE = 'skl'  # GO - geographic objects
+TRAFFIC_JAMS_TYPE = 'trf'
 
 
 class MapApp(Ui_MapAppMainWindow, QMainWindow):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
+
+        self.map_type_box.currentIndexChanged.connect(self.update_map_type)
+        self.go_names_btn.clicked.connect(self.update_map_type)
+        self.traffic_jams_btn.clicked.connect(self.update_map_type)
+
         self.map_api_server = MAP_API_SERVER
         self.map_type = 'map'                  # Параметр l
         self.scale = START_SCALE               # Параметр z
         self.map_pos = [37.588392, 55.734036]  # Параметр ll
         self.pix_maps = {}  # Словарь с уже загруженными ранее картинками
 
-        # Попытка поиграться с потоками. Загружает все изображения в отдельных
-        # потоках, из-за чего программа не подвисает при изменении масштаба.
-        # Не стал добавлять это в конечную версию, так как другим будет сложно
-        # в этом разобраться, да и потоки могут привести к поломке программы.
-        # Можете игнорировать этот кусок кода.
-        # for i in wave_range(0, self.scale, 18):
-        #     self.load_pix_map(i)
-
-        self.map_label = ScalingImage(self)
-        self.gridLayout.addWidget(self.map_label)
         self.override_map_params()
-
-    # Часть работы с потоками. Игнорируйте этот код.
-    # @queue_thread_qt
-    # def load_pix_map(self, i):
-    #     self.get_pix_map_by_scale(scale=i)
 
     def get_pix_map(self, map_type=None, map_pos=None, scale=None):
         """Получение изображения карты."""
@@ -78,8 +70,18 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
                 self.scale -= 1
             self.override_map_params()
 
+    def update_map_type(self):
+        map_type = [MAP_TYPES[self.map_type_box.currentIndex()]]
+        if self.go_names_btn.isChecked():
+            map_type += [GO_NAMES_TYPE]
+        if self.traffic_jams_btn.isChecked():
+            map_type += [TRAFFIC_JAMS_TYPE]
+        self.map_type = ','.join(map_type)
+        self.override_map_params()
+
 
 app = QApplication(sys.argv)
 map_app = MapApp()
 map_app.show()
 sys.exit(app.exec_())
+
