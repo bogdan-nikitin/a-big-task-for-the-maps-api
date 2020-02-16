@@ -28,7 +28,7 @@ def wave_range(start, middle, end, step=1):
         if not (not_left_bound or not_right_bound):
             return
 
-
+          
 class RequestError(Exception):
     pass
 
@@ -50,9 +50,9 @@ def get_pos(geocode, **kwargs) -> [float, float]:
 
     for k, v in kwargs.items():
         geo_coder_params[k] = v
-
+        
     response = perform_request(GEOCODER_API_SERVER, params=geo_coder_params)
-
+    
     json_response = response.json()
     toponym = json_response["response"]["GeoObjectCollection"][
         "featureMember"][0]["GeoObject"]
