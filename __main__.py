@@ -7,6 +7,8 @@ from PyQt5.Qt import QPixmap, QImage, Qt
 
 
 START_SCALE = 13
+START_POS = [37.588392, 55.734036]
+
 MAP_TYPES = ['map', 'sat']
 GO_NAMES_TYPE = 'skl'  # GO - geographic objects
 TRAFFIC_JAMS_TYPE = 'trf'
@@ -22,18 +24,27 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
         super().__init__()
         self.setupUi(self)
 
+        # Назначаем функции на элементы UI
         self.map_type_box.currentIndexChanged.connect(self.update_map_type)
         self.go_names_btn.clicked.connect(self.update_map_type)
         self.traffic_jams_btn.clicked.connect(self.update_map_type)
         self.find_obj_btn.clicked.connect(self.get_object)
+        self.reset_result_btn.clicked.connect(self.reset_result)
 
-        self.map_type = 'map'                  # Параметр l
-        self.scale = START_SCALE               # Параметр z
         # Пусть карта позиционируется на Москве, дабы было понятно что
         # программа работает
-        self.map_pos = [37.588392, 55.734036]  # Параметр ll
-        self.tags = []                         # Параметр pt
+        self.map_pos = START_POS  # Параметр ll
+        self.map_type = 'map'     # Параметр l
+        self.scale = START_SCALE  # Параметр z
+        self.tags = []            # Параметр pt
+
         self.pix_maps = {}  # Словарь с уже загруженными ранее картинками
+
+        self.override_map_params()
+
+    def reset_result(self):
+        self.map_pos = START_POS
+        self.tags = []
         self.override_map_params()
 
     def get_pix_map(self, map_type=None, map_pos=None, scale=None, tags=None):
