@@ -17,6 +17,7 @@ ERROR_STYLESHEET = '*{color:red;}'
 INFO_LABEL_STYLESHEET = '*{color:black;}'
 
 TOPONYM_NOT_FOUND_ERROR_MSG = 'Объект не найден'
+BAD_RESPONSE_ERROR = 'Нет ответа от сервера'
 
 
 class MapApp(Ui_MapAppMainWindow, QMainWindow):
@@ -37,6 +38,8 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
         self.map_type = 'map'     # Параметр l
         self.scale = START_SCALE  # Параметр z
         self.tags = []            # Параметр pt
+        self.address = None
+        self.toponym = None
 
         self.pix_maps = {}  # Словарь с уже загруженными ранее картинками
 
@@ -45,6 +48,9 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
     def reset_result(self):
         self.map_pos = START_POS
         self.tags = []
+        self.address = None
+        self.address_label.setText('')
+        self.toponym = None
         self.override_map_params()
 
     def get_pix_map(self, map_type=None, map_pos=None, scale=None, tags=None):
@@ -102,12 +108,19 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
 
     def get_object(self):
         try:
-            self.map_pos = get_pos(self.object_input.text())
-            self.tags.append(f'{",".join(map(str, self.map_pos))},comma')
-            self.override_map_params()
-            self.clear_info_label()
-        except ToponymNotFound:
-            self.print_error(TOPONYM_NOT_FOUND_ERROR_MSG)
+            toponyms = get_toponyms(self.object_input.text())
+            if len(toponyms) == 0:
+                self.print_error(TOPONYM_NOT_FOUND_ERROR_MSG)
+            else:
+                self.toponym = toponyms[0]
+                self.map_pos = get_pos_by_toponym(self.toponym)
+                self.tags.append(f'{",".join(map(str, self.map_pos))},comma')
+                self.address = get_address_by_toponym(self.toponym)
+                self.set_address_label()
+                self.clear_info_label()
+                self.override_map_params()
+        except RequestError:
+            self.print_error(BAD_RESPONSE_ERROR)
 
     def print_error(self, msg):
         self.info_label.setStyleSheet(ERROR_STYLESHEET)
@@ -116,6 +129,9 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
     def clear_info_label(self):
         self.info_label.setStyleSheet(INFO_LABEL_STYLESHEET)
         self.info_label.setText('')
+
+    def set_address_label(self):
+        self.address_label.setText(self.address)
 
 
 app = QApplication(sys.argv)
