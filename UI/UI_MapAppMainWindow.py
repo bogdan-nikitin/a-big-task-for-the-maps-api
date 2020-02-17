@@ -54,6 +54,9 @@ class Ui_MapAppMainWindow(object):
         self.find_obj_btn = QtWidgets.QPushButton(self.centralwidget)
         self.find_obj_btn.setObjectName("find_obj_btn")
         self.horizontalLayout.addWidget(self.find_obj_btn)
+        self.reset_result_btn = QtWidgets.QPushButton(self.centralwidget)
+        self.reset_result_btn.setObjectName("reset_result_btn")
+        self.horizontalLayout.addWidget(self.reset_result_btn)
         self.info_label = QtWidgets.QLabel(self.centralwidget)
         self.info_label.setText("")
         self.info_label.setObjectName("info_label")
@@ -83,4 +86,5 @@ class Ui_MapAppMainWindow(object):
         self.traffic_jams_btn.setText(_translate("MapAppMainWindow", "пробки"))
         self.object_input.setPlaceholderText(_translate("MapAppMainWindow", "введите запрос для поиска объекта"))
         self.find_obj_btn.setText(_translate("MapAppMainWindow", "искать"))
+        self.reset_result_btn.setText(_translate("MapAppMainWindow", "сброс поискового результата"))
 from Modules.ScalingImage import ScalingImage
