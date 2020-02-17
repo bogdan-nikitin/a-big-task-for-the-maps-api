@@ -55,6 +55,20 @@
        </widget>
       </item>
       <item>
+       <widget class="QLineEdit" name="object_input">
+        <property name="text">
+         <string>введите запрос для поиска объекта</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="find_obj_btn">
+        <property name="text">
+         <string>искать</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <spacer name="horizontalSpacer">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
