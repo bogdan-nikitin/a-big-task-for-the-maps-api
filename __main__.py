@@ -11,6 +11,11 @@ MAP_TYPES = ['map', 'sat']
 GO_NAMES_TYPE = 'skl'  # GO - geographic objects
 TRAFFIC_JAMS_TYPE = 'trf'
 
+ERROR_STYLESHEET = '*{color:red;}'
+INFO_LABEL_STYLESHEET = '*{color:black;}'
+
+TOPONYM_NOT_FOUND_ERROR_MSG = 'Объект не найден'
+
 
 class MapApp(Ui_MapAppMainWindow, QMainWindow):
     def __init__(self):
@@ -22,13 +27,13 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
         self.traffic_jams_btn.clicked.connect(self.update_map_type)
         self.find_obj_btn.clicked.connect(self.get_object)
 
-        self.map_api_server = MAP_API_SERVER
         self.map_type = 'map'                  # Параметр l
         self.scale = START_SCALE               # Параметр z
-        self.map_pos = [1, 1]                  # Параметр ll
+        # Пусть карта позиционируется на Москве, дабы было понятно что
+        # программа работает
+        self.map_pos = [37.588392, 55.734036]  # Параметр ll
         self.tags = []                         # Параметр pt
         self.pix_maps = {}  # Словарь с уже загруженными ранее картинками
-
         self.override_map_params()
 
     def get_pix_map(self, map_type=None, map_pos=None, scale=None, tags=None):
@@ -54,7 +59,7 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
         key = tuple(map_params.values())
         pix_map = self.pix_maps.get(key)
         if pix_map is None:
-            response = perform_request(self.map_api_server, params=map_params)
+            response = perform_request(MAP_API_SERVER, params=map_params)
             image = QImage().fromData(response.content)
             pix_map = QPixmap().fromImage(image)
             self.pix_maps[key] = pix_map
@@ -85,10 +90,21 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
         self.override_map_params()
 
     def get_object(self):
-        if get_pos(self.object_input.text()):
+        try:
             self.map_pos = get_pos(self.object_input.text())
             self.tags.append(f'{",".join(map(str, self.map_pos))},comma')
             self.override_map_params()
+            self.clear_info_label()
+        except ToponymNotFound:
+            self.print_error(TOPONYM_NOT_FOUND_ERROR_MSG)
+
+    def print_error(self, msg):
+        self.info_label.setStyleSheet(ERROR_STYLESHEET)
+        self.info_label.setText(msg)
+
+    def clear_info_label(self):
+        self.info_label.setStyleSheet(INFO_LABEL_STYLESHEET)
+        self.info_label.setText('')
 
 
 app = QApplication(sys.argv)

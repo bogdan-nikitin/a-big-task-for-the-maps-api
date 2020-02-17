@@ -6,17 +6,23 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>878</width>
-    <height>508</height>
+    <width>682</width>
+    <height>457</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Поисковое приложение</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QGridLayout" name="gridLayout">
+   <layout class="QGridLayout" name="gridLayout" rowstretch="0,1">
+    <item row="1" column="0">
+     <widget class="ScalingImage" name="map_label" native="true"/>
+    </item>
     <item row="0" column="0">
      <layout class="QHBoxLayout" name="horizontalLayout">
+      <property name="sizeConstraint">
+       <enum>QLayout::SetDefaultConstraint</enum>
+      </property>
       <item>
        <widget class="QComboBox" name="map_type_box">
         <property name="focusPolicy">
@@ -36,6 +42,9 @@
       </item>
       <item>
        <widget class="QPushButton" name="go_names_btn">
+        <property name="focusPolicy">
+         <enum>Qt::NoFocus</enum>
+        </property>
         <property name="text">
          <string>названия</string>
         </property>
@@ -46,6 +55,9 @@
       </item>
       <item>
        <widget class="QPushButton" name="traffic_jams_btn">
+        <property name="focusPolicy">
+         <enum>Qt::NoFocus</enum>
+        </property>
         <property name="text">
          <string>пробки</string>
         </property>
@@ -56,7 +68,28 @@
       </item>
       <item>
        <widget class="QLineEdit" name="object_input">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>16777215</height>
+         </size>
+        </property>
         <property name="text">
+         <string/>
+        </property>
+        <property name="placeholderText">
          <string>введите запрос для поиска объекта</string>
         </property>
        </widget>
@@ -65,6 +98,13 @@
        <widget class="QPushButton" name="find_obj_btn">
         <property name="text">
          <string>искать</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="info_label">
+        <property name="text">
+         <string/>
         </property>
        </widget>
       </item>
@@ -83,9 +123,6 @@
       </item>
      </layout>
     </item>
-    <item row="1" column="0">
-     <widget class="ScalingImage" name="map_label" native="true"/>
-    </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -93,7 +130,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>878</width>
+     <width>682</width>
      <height>21</height>
     </rect>
    </property>
