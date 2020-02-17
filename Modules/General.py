@@ -1,7 +1,6 @@
 import requests
 from Modules.ApiKeys import *
 
-
 MAP_API_SERVER = 'http://static-maps.yandex.ru/1.x/'
 GEOCODER_API_SERVER = 'https://geocode-maps.yandex.ru/1.x'
 
@@ -32,7 +31,7 @@ def wave_range(start, middle, end, step=1):
         if not (not_left_bound or not_right_bound):
             return
 
-          
+
 class RequestError(Exception):
     pass
 
@@ -64,3 +63,17 @@ def get_pos(geocode, **kwargs) -> [float, float]:
     toponym = toponyms[0]["GeoObject"]
     toponym_coodrinates = toponym["Point"]["pos"]
     return list(map(float, toponym_coodrinates.split(' ')))
+
+
+def get_address(geocode):
+    geocoder_params = {'apikey': GEOCODER_API_KEY,
+                       'geocode': geocode,
+                       'format': 'json'}
+
+    response = perform_request(GEOCODER_API_SERVER, params=geocoder_params)
+    json_response = response.json()
+    toponyms = json_response["response"]["GeoObjectCollection"][
+        "featureMember"]
+    toponym_address = toponyms[0]["GeoObject"]["metaDataProperty"][
+        "GeocoderMetaData"]["text"]
+    return toponym_address

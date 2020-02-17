@@ -37,6 +37,7 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
         self.map_type = 'map'     # Параметр l
         self.scale = START_SCALE  # Параметр z
         self.tags = []            # Параметр pt
+        self.address = None
 
         self.pix_maps = {}  # Словарь с уже загруженными ранее картинками
 
@@ -45,6 +46,8 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
     def reset_result(self):
         self.map_pos = START_POS
         self.tags = []
+        self.address = None
+        self.address_label.setText('')
         self.override_map_params()
 
     def get_pix_map(self, map_type=None, map_pos=None, scale=None, tags=None):
@@ -104,6 +107,7 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
         try:
             self.map_pos = get_pos(self.object_input.text())
             self.tags.append(f'{",".join(map(str, self.map_pos))},comma')
+            self.set_address_label()
             self.override_map_params()
             self.clear_info_label()
         except ToponymNotFound:
@@ -116,6 +120,10 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
     def clear_info_label(self):
         self.info_label.setStyleSheet(INFO_LABEL_STYLESHEET)
         self.info_label.setText('')
+
+    def set_address_label(self):
+        self.address = get_address(self.object_input.text())
+        self.address_label.setText(self.address)
 
 
 app = QApplication(sys.argv)
