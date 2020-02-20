@@ -27,6 +27,7 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
 
         # Назначаем функции на элементы UI
         self.map_type_box.currentIndexChanged.connect(self.update_map_type)
+        self.post_address_box.currentIndexChanged.connect(self.update_address)
         self.go_names_btn.clicked.connect(self.update_map_type)
         self.traffic_jams_btn.clicked.connect(self.update_map_type)
         self.find_obj_btn.clicked.connect(self.get_object)
@@ -39,6 +40,7 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
         self.scale = START_SCALE  # Параметр z
         self.tags = []            # Параметр pt
         self.address = None
+        self.post_address = None
         self.toponym = None
 
         self.pix_maps = {}  # Словарь с уже загруженными ранее картинками
@@ -49,6 +51,7 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
         self.map_pos = START_POS
         self.tags = []
         self.address = None
+        self.post_address = None
         self.address_label.setText('')
         self.toponym = None
         self.override_map_params()
@@ -106,6 +109,12 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
         self.map_type = ','.join(map_type)
         self.override_map_params()
 
+    def update_address(self):
+        if self.post_address_box.currentIndex():
+            self.set_address_label()
+        else:
+            self.set_address_label(self.post_address)
+
     def get_object(self):
         try:
             toponyms = get_toponyms(self.object_input.text())
@@ -116,7 +125,8 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
                 self.map_pos = get_pos_by_toponym(self.toponym)
                 self.tags.append(f'{",".join(map(str, self.map_pos))},comma')
                 self.address = get_address_by_toponym(self.toponym)
-                self.set_address_label()
+                self.post_address = get_post_address_by_toponym(self.toponym)
+                self.set_address_label(self.post_address)
                 self.clear_info_label()
                 self.override_map_params()
         except RequestError:
@@ -130,8 +140,12 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
         self.info_label.setStyleSheet(INFO_LABEL_STYLESHEET)
         self.info_label.setText('')
 
-    def set_address_label(self):
-        self.address_label.setText(self.address)
+    def set_address_label(self, post_address=None):
+        if post_address and not self.post_address_box.currentIndex():
+            self.address_label.setText(f'{self.address}, почтовый адрес:'
+                                       f' {self.post_address}')
+        else:
+            self.address_label.setText(self.address)
 
 
 app = QApplication(sys.argv)

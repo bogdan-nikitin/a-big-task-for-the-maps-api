@@ -72,6 +72,17 @@ def get_address_by_toponym(toponym):
     return toponym_address
 
 
+def get_post_address_by_toponym(toponym):
+    toponym_post_address = None
+    try:
+        toponym_post_address = toponym["GeoObject"]["metaDataProperty"][
+            "GeocoderMetaData"]["Address"]["postal_code"]
+    except KeyError:
+        pass
+    finally:
+        return toponym_post_address
+
+
 def get_pos(geocode, **kwargs) -> [float, float]:
     geo_coder_params = {'apikey': GEOCODER_API_KEY,
                         'format': 'json',

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'UI/main_window.ui'
+# Form implementation generated from reading ui file 'main_window.ui'
 #
-# Created by: PyQt5 UI code generator 5.14.1
+# Created by: PyQt5 UI code generator 5.13.0
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -51,13 +51,13 @@ class Ui_MapAppMainWindow(object):
         self.find_obj_btn = QtWidgets.QPushButton(self.centralwidget)
         self.find_obj_btn.setObjectName("find_obj_btn")
         self.horizontalLayout.addWidget(self.find_obj_btn)
-        self.reset_result_btn = QtWidgets.QPushButton(self.centralwidget)
-        self.reset_result_btn.setObjectName("reset_result_btn")
-        self.horizontalLayout.addWidget(self.reset_result_btn)
         self.info_label = QtWidgets.QLabel(self.centralwidget)
         self.info_label.setText("")
         self.info_label.setObjectName("info_label")
         self.horizontalLayout.addWidget(self.info_label)
+        self.reset_result_btn = QtWidgets.QPushButton(self.centralwidget)
+        self.reset_result_btn.setObjectName("reset_result_btn")
+        self.horizontalLayout.addWidget(self.reset_result_btn)
         spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout.addItem(spacerItem)
         self.gridLayout.addLayout(self.horizontalLayout, 0, 0, 1, 1)
@@ -67,6 +67,13 @@ class Ui_MapAppMainWindow(object):
         self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_2.setSizeConstraint(QtWidgets.QLayout.SetDefaultConstraint)
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
+        self.post_address_box = QtWidgets.QComboBox(self.centralwidget)
+        self.post_address_box.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.post_address_box.setContextMenuPolicy(QtCore.Qt.DefaultContextMenu)
+        self.post_address_box.setObjectName("post_address_box")
+        self.post_address_box.addItem("")
+        self.post_address_box.addItem("")
+        self.horizontalLayout_2.addWidget(self.post_address_box)
         self.address_label = QtWidgets.QLabel(self.centralwidget)
         self.address_label.setTabletTracking(False)
         self.address_label.setToolTipDuration(-1)
@@ -77,7 +84,7 @@ class Ui_MapAppMainWindow(object):
         self.address_label.setAlignment(QtCore.Qt.AlignCenter)
         self.address_label.setObjectName("address_label")
         self.horizontalLayout_2.addWidget(self.address_label)
-        spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        spacerItem1 = QtWidgets.QSpacerItem(50, 10, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout_2.addItem(spacerItem1)
         self.gridLayout.addLayout(self.horizontalLayout_2, 2, 0, 1, 1)
         self.gridLayout.setRowStretch(1, 1)
@@ -103,4 +110,6 @@ class Ui_MapAppMainWindow(object):
         self.object_input.setPlaceholderText(_translate("MapAppMainWindow", "введите запрос для поиска объекта"))
         self.find_obj_btn.setText(_translate("MapAppMainWindow", "искать"))
         self.reset_result_btn.setText(_translate("MapAppMainWindow", "сброс поискового результата"))
+        self.post_address_box.setItemText(0, _translate("MapAppMainWindow", "показывать почтовый адрес"))
+        self.post_address_box.setItemText(1, _translate("MapAppMainWindow", "скрыть почтовый адрес"))
 from Modules.ScalingImage import ScalingImage

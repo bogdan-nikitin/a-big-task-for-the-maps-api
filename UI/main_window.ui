@@ -99,16 +99,16 @@
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="reset_result_btn">
+       <widget class="QLabel" name="info_label">
         <property name="text">
-         <string>сброс поискового результата</string>
+         <string/>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QLabel" name="info_label">
+       <widget class="QPushButton" name="reset_result_btn">
         <property name="text">
-         <string/>
+         <string>сброс поискового результата</string>
         </property>
        </widget>
       </item>
@@ -135,6 +135,26 @@
       <property name="sizeConstraint">
        <enum>QLayout::SetDefaultConstraint</enum>
       </property>
+      <item>
+       <widget class="QComboBox" name="post_address_box">
+        <property name="focusPolicy">
+         <enum>Qt::NoFocus</enum>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::DefaultContextMenu</enum>
+        </property>
+        <item>
+         <property name="text">
+          <string>показывать почтовый адрес</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>скрыть почтовый адрес</string>
+         </property>
+        </item>
+       </widget>
+      </item>
       <item>
        <widget class="QLabel" name="address_label">
         <property name="tabletTracking">
@@ -167,8 +187,8 @@
         </property>
         <property name="sizeHint" stdset="0">
          <size>
-          <width>40</width>
-          <height>20</height>
+          <width>50</width>
+          <height>10</height>
          </size>
         </property>
        </spacer>
