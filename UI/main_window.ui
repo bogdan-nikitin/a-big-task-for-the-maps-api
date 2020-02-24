@@ -128,7 +128,7 @@
      </layout>
     </item>
     <item row="1" column="0">
-     <widget class="ScalingImage" name="map_label" native="true"/>
+     <widget class="MapImage" name="map_label" native="true"/>
     </item>
     <item row="2" column="0">
      <layout class="QHBoxLayout" name="horizontalLayout_2">
@@ -191,9 +191,9 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>ScalingImage</class>
+   <class>MapImage</class>
    <extends>QWidget</extends>
-   <header>Modules.ScalingImage</header>
+   <header>Modules.MapImage</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

@@ -1,5 +1,7 @@
 import requests
 from Modules.ApiKeys import *
+from multipledispatch import dispatch
+from numbers import Number
 
 MAP_API_SERVER = 'http://static-maps.yandex.ru/1.x/'
 GEOCODER_API_SERVER = 'https://geocode-maps.yandex.ru/1.x'
@@ -46,6 +48,8 @@ def perform_request(request, *args, **kwargs):
     return response
 
 
+# get_toponyms - мультиметод. Принимает на вход либо строку, либо два числа.
+@dispatch(str)
 def get_toponyms(geocode, **kwargs):
     geo_coder_params = {'apikey': GEOCODER_API_KEY,
                         'format': 'json',
@@ -59,6 +63,11 @@ def get_toponyms(geocode, **kwargs):
     toponyms = json_response["response"]["GeoObjectCollection"][
         "featureMember"]
     return toponyms
+
+
+@dispatch(Number, Number)
+def get_toponyms(x, y, **kwargs):
+    return get_toponyms(','.join(map(str, [x, y])), **kwargs)
 
 
 def get_pos_by_toponym(toponym):
@@ -103,3 +112,13 @@ def get_address(geocode):
     toponym_address = toponyms[0]["GeoObject"]["metaDataProperty"][
         "GeocoderMetaData"]["text"]
     return toponym_address
+
+
+def get_tile(tile_w, tile_h, pos):
+    x = pos[0] // tile_w
+    y = pos[1] // tile_h
+    return x, y
+
+
+def format_map_view_box(view_box):
+    return '~'.join(map(lambda p: ','.join(map(str, p)), view_box))

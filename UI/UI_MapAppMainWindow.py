@@ -61,7 +61,7 @@ class Ui_MapAppMainWindow(object):
         spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout.addItem(spacerItem)
         self.gridLayout.addLayout(self.horizontalLayout, 0, 0, 1, 1)
-        self.map_label = ScalingImage(self.centralwidget)
+        self.map_label = MapImage(self.centralwidget)
         self.map_label.setObjectName("map_label")
         self.gridLayout.addWidget(self.map_label, 1, 0, 1, 1)
         self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
@@ -103,4 +103,4 @@ class Ui_MapAppMainWindow(object):
         self.object_input.setPlaceholderText(_translate("MapAppMainWindow", "введите запрос для поиска объекта"))
         self.find_obj_btn.setText(_translate("MapAppMainWindow", "искать"))
         self.reset_result_btn.setText(_translate("MapAppMainWindow", "сброс поискового результата"))
-from Modules.ScalingImage import ScalingImage
+from Modules.MapImage import MapImage
