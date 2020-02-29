@@ -37,6 +37,7 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
         # Назначаем функции на элементы UI
         self.map_type_box.currentIndexChanged.connect(self.update_map_type)
         self.go_names_btn.clicked.connect(self.update_map_type)
+        self.post_address_box.currentIndexChanged.connect(self.update_address)
         self.traffic_jams_btn.clicked.connect(self.update_map_type)
         self.find_obj_btn.clicked.connect(self.get_object)
         self.reset_result_btn.clicked.connect(self.reset_result)
@@ -56,7 +57,7 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
 
         self.address = None
         self.toponym = None
-        # self.post_address = None
+        self.post_address = None
 
         self.pix_maps = {}  # Словарь с уже загруженными ранее картинками
 
@@ -131,7 +132,8 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
                 self.address = get_address_by_toponym(self.toponym)
                 self.set_address_label()
                 self.clear_info_label()
-                # self.post_address = get_post_address_by_toponym(self.toponym)
+                self.post_address = get_post_address_by_toponym(self.toponym)
+                self.update_address()
                 self.override_map_params()
                 return 
         self.print_error(TOPONYM_NOT_FOUND_ERROR_MSG)
@@ -141,6 +143,7 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
         self.map_pos = START_POS
         self.tags = []
         self.address = None
+        self.post_address = None
         self.address_label.setText('')
         self.toponym = None
         self.override_map_params()
@@ -203,6 +206,19 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
                 self.display_area_scale -= 1
                 self.override_map_params()
 
+    def update_address(self):
+        if self.post_address_box.currentIndex():
+            self.set_address_label()
+        else:
+            self.set_address_label(self.post_address)
+
+    def set_address_label(self, post_address=None):
+        if post_address and self.post_address_box.currentIndex() == 0:
+            self.address_label.setText(f'{self.address}, почтовый адрес:'
+                                       f' {self.post_address}')
+        else:
+            self.address_label.setText(self.address)
+
     def update_map_type(self):
         """Обновить текущий тип карты, основываясь на выбранном пользователем в окне
         программы типом карты."""
@@ -222,15 +238,15 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
         """Изменить топоним, основываясь на адресе, введённым пользователем в окне
         программы."""
         try:
-            toponyms = get_toponyms(self.object_input.text())
-            if len(toponyms) == 0:
+            if len(toponyms := get_toponyms(self.object_input.text())) == 0:
                 self.print_error(TOPONYM_NOT_FOUND_ERROR_MSG)
             else:
                 self.toponym = toponyms[0]
                 self.map_pos = get_pos_by_toponym(self.toponym)
-                self.add_tag(self.map_pos)
+                self.tags.append(f'{",".join(map(str, self.map_pos))},comma')
                 self.address = get_address_by_toponym(self.toponym)
-                self.set_address_label()
+                self.post_address = get_post_address_by_toponym(self.toponym)
+                self.set_address_label(self.post_address)
                 self.clear_info_label()
                 self.override_map_params()
         except RequestError:
@@ -244,9 +260,6 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
     def clear_info_label(self):
         self.info_label.setStyleSheet(INFO_LABEL_STYLESHEET)
         self.info_label.setText('')
-
-    def set_address_label(self):
-        self.address_label.setText(self.address)
     
     def clear_tags(self):
         """Очистить все метки на карте."""

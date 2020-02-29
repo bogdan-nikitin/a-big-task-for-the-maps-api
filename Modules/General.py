@@ -39,8 +39,7 @@ class RequestError(Exception):
 
 
 def perform_request(request, *args, **kwargs):
-    response = requests.get(request, *args, **kwargs)
-    if not response:
+    if not (response := requests.get(request, *args, **kwargs)):
         text = (f'\nОшибка выполнения запроса:\n'
                 f'{response.url}\n'
                 f'Http статус: {response.status_code} ({response.reason})')
@@ -79,6 +78,17 @@ def get_address_by_toponym(toponym):
     toponym_address = toponym["GeoObject"]["metaDataProperty"][
         "GeocoderMetaData"]["text"]
     return toponym_address
+
+
+def get_post_address_by_toponym(toponym):
+    toponym_post_address = None
+    try:
+        toponym_post_address = toponym["GeoObject"]["metaDataProperty"][
+            "GeocoderMetaData"]["Address"]["postal_code"]
+    except KeyError:
+        pass
+    finally:
+        return toponym_post_address
 
 
 def get_pos(geocode, **kwargs) -> [float, float]:
