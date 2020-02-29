@@ -115,10 +115,12 @@ def get_address(geocode):
 
 
 def get_tile(tile_w, tile_h, pos):
+    # Не используется, нужно было при попытке решить 11 задачу
     x = pos[0] // tile_w
     y = pos[1] // tile_h
     return x, y
 
 
 def format_map_view_box(view_box):
+    # Не используется, нужно было при попытке решить 11 задачу
     return '~'.join(map(lambda p: ','.join(map(str, p)), view_box))

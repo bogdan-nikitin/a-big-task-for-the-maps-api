@@ -43,14 +43,16 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
 
         # Пусть карта позиционируется на Москве, дабы было понятно что
         # программа работает
-        self.map_pos = START_POS  # Параметр ll
-        self.map_type = 'map'     # Параметр l
-        self.scale = START_SCALE  # Параметр z
-        self.display_area = START_DISPLAY_AREA
-        self.tags = []            # Параметр pt
-        
+        self.map_pos = START_POS                # Параметр ll
+        self.map_type = 'map'                   # Параметр l
+        self.display_area = START_DISPLAY_AREA  # Параметр spn
+        self.tags = []                          # Параметр pt
+
+        # Переменная отвечает за масштаб карты. Аналогична параметру z в
+        # Yandex Static API, только в качестве такового в запрос не передаётся.
+        # Вместо этого с помощью этой переменной вычисляется значение spn,
+        # которое уже передаётся в параметрах запроса.
         self.display_area_scale = START_SCALE
-        self.view_box = []
 
         self.address = None
         self.toponym = None
@@ -62,7 +64,7 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
 
     def get_view_box(self, map_pos=None):
         """Функция для получения параметра bbox в картах через map_pos"""
-        # Не используется
+        # Функция в программе не задействована
         if map_pos is None:
             map_pos = self.map_pos
         half_w = (MAP_DEGREE_WIDTH / 2 ** self.display_area_scale) / 2
@@ -98,6 +100,21 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
             return
         x = self.map_pos[0] + (2 * mouse_x - 1) * self.display_area[0]
         y = self.map_pos[1] - (2 * mouse_y - 1) * self.display_area[1]
+
+        # Оператор :=, в строчке кода ниже, добавлен в Python 3.8.
+        # О нём можете почитать тут https://www.python.org/dev/peps/pep-0572/
+        # Если коротко, то оператор присваивает переменной справа значение
+        # слева и возвращает это значение, т.е.
+        # if (difference := num1 - num2) > 2:
+        #     print('Difference between {num1} and {num2} greater than 2')
+        # Эквивалентно
+        # difference = num1 - num2
+        # if difference > 2:
+        #     print('Difference between {num1} and {num2} greater than 2')
+        # Чтобы программа работала, необходимо скачать и установить Python
+        # новой версии (если вы ещё не скачали) и в PyCharm зайти в File >
+        # Settings > Project: название проекта > Project Interpreter >
+        # Project Interpreter и выбрать Python 3.8
         if len(toponyms := get_toponyms(x, y)) != 0:
             found_toponym = toponyms[0]
             pos = get_pos_by_toponym(found_toponym)
@@ -120,6 +137,7 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
         self.print_error(TOPONYM_NOT_FOUND_ERROR_MSG)
 
     def reset_result(self):
+        """Сброс результата поиска."""
         self.map_pos = START_POS
         self.tags = []
         self.address = None
@@ -137,12 +155,8 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
             map_type = self.map_type
         if map_pos is None:
             map_pos = self.map_pos
-        if scale is None:
-            scale = self.scale
         if tags is None:
             tags = self.tags
-        if display_area is None:
-            display_area = self.display_area
 
         display_area = [MAP_DEGREE_WIDTH / 2 ** self.display_area_scale / 2,
                         MAP_DEGREE_HEIGHT / 2 ** self.display_area_scale / 2]
@@ -157,8 +171,7 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
             'pt': '~'.join(map(str, tags))
         }
         key = tuple(map_params.values())
-        pix_map = self.pix_maps.get(key)
-        if pix_map is None:
+        if (pix_map := self.pix_maps.get(key)) is None:
             try:
                 response = perform_request(MAP_API_SERVER, params=map_params)
                 image = QImage().fromData(response.content)
@@ -169,7 +182,6 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
         return pix_map
 
     def override_map_params(self):
-        self.view_box = self.get_view_box()
         """Изменение параметров карты."""
         pix_map = self.get_pix_map()
         if pix_map:
@@ -180,24 +192,20 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
 
     def keyPressEvent(self, *args, **kwargs):
         key = args[0].key()
+
+        # Изменение масштаба карты по нажатию клавиш
         if key == Qt.Key_PageUp:
             if self.display_area_scale < 17:
                 self.display_area_scale += 1
                 self.override_map_params()
-            # new_display_area = [coord / 2 for coord in self.display_area]
-            # if min(new_display_area) >= MIN_DISPLAY_AREA:
-            #     self.display_area = new_display_area
-            #     self.override_map_params()
         elif key == Qt.Key_PageDown:
             if self.display_area_scale > 0:
                 self.display_area_scale -= 1
                 self.override_map_params()
-            # new_display_area = [coord * 2 for coord in self.display_area]
-            # if max(new_display_area) <= MAX_DISPLAY_AREA:
-            #     self.display_area = new_display_area
-            #     self.override_map_params()
 
     def update_map_type(self):
+        """Обновить текущий тип карты, основываясь на выбранном пользователем в окне
+        программы типом карты."""
         map_type = [MAP_TYPES[self.map_type_box.currentIndex()]]
         if self.go_names_btn.isChecked():
             map_type += [GO_NAMES_TYPE]
@@ -207,9 +215,12 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
         self.override_map_params()
 
     def add_tag(self, pos):
+        """Добавить метку на карту"""
         self.tags.append(f'{",".join(map(str, pos))},comma')
 
     def get_object(self):
+        """Изменить топоним, основываясь на адресе, введённым пользователем в окне
+        программы."""
         try:
             toponyms = get_toponyms(self.object_input.text())
             if len(toponyms) == 0:
@@ -226,6 +237,7 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
             self.print_error(BAD_RESPONSE_ERROR)
 
     def print_error(self, msg):
+        """Вывести сообщение об ошибке в окне программы."""
         self.info_label.setStyleSheet(ERROR_STYLESHEET)
         self.info_label.setText(msg)
 
@@ -237,4 +249,5 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
         self.address_label.setText(self.address)
     
     def clear_tags(self):
+        """Очистить все метки на карте."""
         self.tags = []
