@@ -1,5 +1,7 @@
 import requests
 from Modules.ApiKeys import *
+from multipledispatch import dispatch
+from numbers import Number
 
 MAP_API_SERVER = 'http://static-maps.yandex.ru/1.x/'
 GEOCODER_API_SERVER = 'https://geocode-maps.yandex.ru/1.x'
@@ -37,8 +39,7 @@ class RequestError(Exception):
 
 
 def perform_request(request, *args, **kwargs):
-    response = requests.get(request, *args, **kwargs)
-    if not response:
+    if not (response := requests.get(request, *args, **kwargs)):
         text = (f'\nОшибка выполнения запроса:\n'
                 f'{response.url}\n'
                 f'Http статус: {response.status_code} ({response.reason})')
@@ -46,6 +47,8 @@ def perform_request(request, *args, **kwargs):
     return response
 
 
+# get_toponyms - мультиметод. Принимает на вход либо строку, либо два числа.
+@dispatch(str)
 def get_toponyms(geocode, **kwargs):
     geo_coder_params = {'apikey': GEOCODER_API_KEY,
                         'format': 'json',
@@ -61,6 +64,11 @@ def get_toponyms(geocode, **kwargs):
     return toponyms
 
 
+@dispatch(Number, Number)
+def get_toponyms(x, y, **kwargs):
+    return get_toponyms(','.join(map(str, [x, y])), **kwargs)
+
+
 def get_pos_by_toponym(toponym):
     toponym_coodrinates = toponym["GeoObject"]["Point"]["pos"]
     return list(map(float, toponym_coodrinates.split(' ')))
@@ -70,6 +78,17 @@ def get_address_by_toponym(toponym):
     toponym_address = toponym["GeoObject"]["metaDataProperty"][
         "GeocoderMetaData"]["text"]
     return toponym_address
+
+
+def get_post_address_by_toponym(toponym):
+    toponym_post_address = None
+    try:
+        toponym_post_address = toponym["GeoObject"]["metaDataProperty"][
+            "GeocoderMetaData"]["Address"]["postal_code"]
+    except KeyError:
+        pass
+    finally:
+        return toponym_post_address
 
 
 def get_pos(geocode, **kwargs) -> [float, float]:
@@ -103,3 +122,15 @@ def get_address(geocode):
     toponym_address = toponyms[0]["GeoObject"]["metaDataProperty"][
         "GeocoderMetaData"]["text"]
     return toponym_address
+
+
+def get_tile(tile_w, tile_h, pos):
+    # Не используется, нужно было при попытке решить 11 задачу
+    x = pos[0] // tile_w
+    y = pos[1] // tile_h
+    return x, y
+
+
+def format_map_view_box(view_box):
+    # Не используется, нужно было при попытке решить 11 задачу
+    return '~'.join(map(lambda p: ','.join(map(str, p)), view_box))

@@ -10,6 +10,7 @@ class ScalingImage(QWidget):
     def __init__(self, parent=None):
         QWidget.__init__(self, parent=parent)
         self.pix_map = QPixmap()
+        self.image_rect = QRect()
 
     def setPixmap(self, pix_map):
         """Задать картинку."""
@@ -36,4 +37,5 @@ class ScalingImage(QWidget):
             rect = QRect((width - new_image_width) // 2,
                          (self.height() - new_image_height) // 2,
                          new_image_width, new_image_height)
+            self.image_rect = rect
             painter.drawPixmap(rect, self.pix_map)
