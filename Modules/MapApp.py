@@ -9,7 +9,6 @@ START_SCALE = 13
 START_DISPLAY_AREA = [90, 45]
 START_POS = [37.588392, 55.734036]
 
-
 MAP_DEGREE_WIDTH = 360
 MAP_DEGREE_HEIGHT = 180
 
@@ -205,6 +204,32 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
             if self.display_area_scale > 0:
                 self.display_area_scale -= 1
                 self.override_map_params()
+
+        # Перемещение по нажанию стрелок
+        if key in [Qt.Key_Up, Qt.Key_Down, Qt.Key_Left, Qt.Key_Right]:
+            x_step = self.display_area[0] * 2
+            y_step = self.display_area[1] * 2
+            x_offset = {Qt.Key_Left: -x_step, Qt.Key_Right: x_step}.get(key, 0)
+            y_offset = {Qt.Key_Up: y_step, Qt.Key_Down: -y_step}.get(key, 0)
+            self.map_pos[0] += x_offset
+            self.map_pos[1] += y_offset
+
+            max_x = MAP_DEGREE_WIDTH / 2 - self.display_area[0] * 2
+            min_x = -MAP_DEGREE_WIDTH / 2 + self.display_area[1] * 2
+
+            max_y = MAP_DEGREE_HEIGHT / 2 - self.display_area[1] * 2
+            min_y = -MAP_DEGREE_HEIGHT / 2 + self.display_area[1] * 2
+
+            if self.map_pos[0] > max_x:
+                self.map_pos[0] = max_x
+            elif self.map_pos[0] < min_x:
+                self.map_pos[0] = min_x
+
+            if self.map_pos[1] > max_y:
+                self.map_pos[1] = max_y
+            elif self.map_pos[1] < min_y:
+                self.map_pos[1] = min_y
+            self.override_map_params()
 
     def update_address(self):
         if self.post_address_box.currentIndex():

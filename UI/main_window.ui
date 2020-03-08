@@ -83,6 +83,9 @@
           <height>16777215</height>
          </size>
         </property>
+        <property name="focusPolicy">
+         <enum>Qt::NoFocus</enum>
+        </property>
         <property name="text">
          <string/>
         </property>
@@ -93,6 +96,9 @@
       </item>
       <item>
        <widget class="QPushButton" name="find_obj_btn">
+        <property name="focusPolicy">
+         <enum>Qt::NoFocus</enum>
+        </property>
         <property name="text">
          <string>искать</string>
         </property>
@@ -107,6 +113,9 @@
       </item>
       <item>
        <widget class="QPushButton" name="reset_result_btn">
+        <property name="focusPolicy">
+         <enum>Qt::NoFocus</enum>
+        </property>
         <property name="text">
          <string>сброс поискового результата</string>
         </property>
