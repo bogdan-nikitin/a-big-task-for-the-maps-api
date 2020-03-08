@@ -40,6 +40,8 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
         self.traffic_jams_btn.clicked.connect(self.update_map_type)
         self.find_obj_btn.clicked.connect(self.get_object)
         self.reset_result_btn.clicked.connect(self.reset_result)
+        self.object_input.returnPressed.connect(
+            self.object_input_return_pressed)
 
         # Пусть карта позиционируется на Москве, дабы было понятно что
         # программа работает
@@ -61,6 +63,10 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
         self.pix_maps = {}  # Словарь с уже загруженными ранее картинками
 
         self.override_map_params()
+
+    def object_input_return_pressed(self):
+        self.object_input.clearFocus()
+        self.get_object()
 
     def get_view_box(self, map_pos=None):
         """Функция для получения параметра bbox в картах через map_pos"""

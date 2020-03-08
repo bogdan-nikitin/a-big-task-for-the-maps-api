@@ -45,7 +45,7 @@ class Ui_MapAppMainWindow(object):
         self.object_input.setSizePolicy(sizePolicy)
         self.object_input.setMinimumSize(QtCore.QSize(0, 0))
         self.object_input.setMaximumSize(QtCore.QSize(16777215, 16777215))
-        self.object_input.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.object_input.setFocusPolicy(QtCore.Qt.ClickFocus)
         self.object_input.setText("")
         self.object_input.setObjectName("object_input")
         self.horizontalLayout.addWidget(self.object_input)
