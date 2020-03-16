@@ -14,4 +14,4 @@ class MapImage(ScalingImage):
         x -= self.image_rect.x()
         y -= self.image_rect.y()
         w, h = self.image_rect.width(), self.image_rect.height()
-        self.map_app.get_object_by_click([x / w, y / h])
+        self.map_app.handle_map_click([x / w, y / h], event.button())

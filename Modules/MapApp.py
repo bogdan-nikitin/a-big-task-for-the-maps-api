@@ -2,7 +2,9 @@ from Modules.General import *
 from PyQt5.QtWidgets import QMainWindow
 from UI.UI_MapAppMainWindow import Ui_MapAppMainWindow
 from PyQt5.Qt import QPixmap, QImage, Qt
-# from Modules.EasyThreadsQt import queue_thread_qt
+from Modules.MapObjects import Toponym, Organization
+import datetime
+from Modules.EasyThreadsQt import queue_thread_qt
 
 
 START_SCALE = 13
@@ -24,9 +26,14 @@ INFO_LABEL_STYLESHEET = '*{color:black;}'
 
 TOPONYM_NOT_FOUND_ERROR_MSG = 'Объект не найден'
 BAD_RESPONSE_ERROR = 'Ошибка при запросе'
+ORGANIZATION_NOT_FOUND_ERROR_MSG = 'Организация не найдена'
+UNEXPECTED_ERROR_MSG = 'Произошла непредвиденная ошибка'
+
+ORGANIZATIONS_SEARCH_RADIUS = 50  # Значение в метрах
 
 
 class MapApp(Ui_MapAppMainWindow, QMainWindow):
+
     def __init__(self):
         super().__init__()
         self.setupUi(self)
@@ -57,11 +64,17 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
         self.display_area_scale = START_SCALE
 
         self.address = None
-        self.toponym = None
+        self.map_object = None
         self.post_address = None
 
         self.pix_maps = {}  # Словарь с уже загруженными ранее картинками
 
+        self.first_map_load()
+
+    @queue_thread_qt
+    def first_map_load(self):
+        # Вынесено в отдельную функцию, дабы была возможность добавить
+        # многопоточность
         self.override_map_params()
 
     def object_input_return_pressed(self):
@@ -97,50 +110,111 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
             y2 = MAP_DEGREE_HEIGHT / 2
         return [[x1, y1], [x2, y2]]
 
+    @staticmethod
+    def is_click_on_map(relative_pos):
+        mouse_x, mouse_y = relative_pos
+        return 0 <= mouse_x <= 1 and 0 <= mouse_y <= 1
+
+    def is_pos_on_map(self, pos):
+        left = self.map_pos[0] + self.display_area[0]
+        right = self.map_pos[0] - self.display_area[0]
+        top = self.map_pos[1] + self.display_area[0]
+        bottom = self.map_pos[1] - self.display_area[1]
+
+        return right <= pos[0] <= left and bottom <= pos[1] <= top
+
+    def click_coordinates(self, relative_pos):
+        mouse_x, mouse_y = relative_pos
+        x = self.map_pos[0] + (2 * mouse_x - 1) * self.display_area[0]
+        y = self.map_pos[1] - (2 * mouse_y - 1) * self.display_area[1]
+        return x, y
+
+    def handle_map_click(self, relative_pos, button):
+        if button == Qt.LeftButton:
+            self.get_object_by_click(relative_pos)
+        elif button == Qt.RightButton:
+            self.get_organization_by_click(relative_pos)
+
+    @queue_thread_qt
+    def get_organization_by_click(self, relative_pos):
+        """Находит организацию в области правого клика в радиусе
+        ORGANIZATIONS_SEARCH_RADIUS."""
+        if not self.is_click_on_map(relative_pos):
+            return
+        x, y = self.click_coordinates(relative_pos)
+        try:
+            if not (toponyms := Toponym.get_objects(x, y)):
+                self.print_error(ORGANIZATION_NOT_FOUND_ERROR_MSG)
+                return
+            toponym = toponyms[0]
+            organizations = Organization.get_objects(toponym.address)
+        except RequestError:
+            self.print_error(BAD_RESPONSE_ERROR)
+            return
+        except Exception as e:
+            self.log_unexpected_error(e)
+            return
+        if not organizations:
+            self.print_error(ORGANIZATION_NOT_FOUND_ERROR_MSG)
+            return
+        for organization in organizations:
+            pos = organization.pos
+            is_in_radius = organization.is_in_radius(
+                (x, y), ORGANIZATIONS_SEARCH_RADIUS
+            )
+            if self.is_pos_on_map(pos) and is_in_radius:
+                self.map_object = organization
+                self.clear_tags()
+                self.add_tag(pos)
+                self.address = (
+                        self.map_object.name + ', ' + self.map_object.address
+                )
+                self.set_address_label()
+                self.clear_info_label()
+                self.post_address = toponym.post_address
+                self.update_address()
+                self.override_map_params()
+                return
+            else:
+                continue
+        self.print_error(ORGANIZATION_NOT_FOUND_ERROR_MSG)
+
+    def log_unexpected_error(self, exception):
+        with open('error_log.txt', mode='a') as file:
+            time = datetime.datetime.now()
+            file.write(f'{time}: {exception}\n')
+        self.print_error(UNEXPECTED_ERROR_MSG)
+
+    @queue_thread_qt
     def get_object_by_click(self, relative_pos):
         """Метод принимает на вход относительную позицию точки на карте
         (относительные координаты показывают, какую часть от области показа
         составляет реальная координата)"""
-        mouse_x, mouse_y = relative_pos
-        if not (0 <= mouse_x <= 1 and 0 <= mouse_y <= 1):
+        if not self.is_click_on_map(relative_pos):
             return
-        x = self.map_pos[0] + (2 * mouse_x - 1) * self.display_area[0]
-        y = self.map_pos[1] - (2 * mouse_y - 1) * self.display_area[1]
+        x, y = self.click_coordinates(relative_pos)
 
-        # Оператор :=, в строчке кода ниже, добавлен в Python 3.8.
-        # О нём можете почитать тут https://www.python.org/dev/peps/pep-0572/
-        # Если коротко, то оператор присваивает переменной справа значение
-        # слева и возвращает это значение, т.е.
-        # if (difference := num1 - num2) > 2:
-        #     print('Difference between {num1} and {num2} greater than 2')
-        # Эквивалентно
-        # difference = num1 - num2
-        # if difference > 2:
-        #     print('Difference between {num1} and {num2} greater than 2')
-        # Чтобы программа работала, необходимо скачать и установить Python
-        # новой версии (если вы ещё не скачали) и в PyCharm зайти в File >
-        # Settings > Project: название проекта > Project Interpreter >
-        # Project Interpreter и выбрать Python 3.8
-        if len(toponyms := get_toponyms(x, y)) != 0:
-            found_toponym = toponyms[0]
-            pos = get_pos_by_toponym(found_toponym)
-
-            left = self.map_pos[0] + self.display_area[0]
-            right = self.map_pos[0] - self.display_area[0]
-            top = self.map_pos[1] + self.display_area[0]
-            bottom = self.map_pos[1] - self.display_area[1]
-
-            if right <= pos[0] <= left and bottom <= pos[1] <= top:
-                self.toponym = found_toponym
+        try:
+            toponyms = Toponym.get_objects(x, y)
+        except RequestError:
+            self.print_error(BAD_RESPONSE_ERROR)
+            return
+        except Exception as e:
+            self.log_unexpected_error(e)
+            return
+        for toponym in toponyms:
+            pos = toponym.pos
+            if self.is_pos_on_map(pos):
+                self.map_object = toponym
                 self.clear_tags()
                 self.add_tag(pos)
-                self.address = get_address_by_toponym(self.toponym)
+                self.address = self.map_object.address
                 self.set_address_label()
                 self.clear_info_label()
-                self.post_address = get_post_address_by_toponym(self.toponym)
+                self.post_address = self.map_object.post_address
                 self.update_address()
                 self.override_map_params()
-                return 
+                return
         self.print_error(TOPONYM_NOT_FOUND_ERROR_MSG)
 
     def reset_result(self):
@@ -150,7 +224,7 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
         self.address = None
         self.post_address = None
         self.address_label.setText('')
-        self.toponym = None
+        self.map_object = None
         self.override_map_params()
 
     def get_pix_map(self, map_type=None, map_pos=None, scale=None, tags=None,
@@ -165,9 +239,11 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
             map_pos = self.map_pos
         if tags is None:
             tags = self.tags
-
-        display_area = [MAP_DEGREE_WIDTH / 2 ** self.display_area_scale / 2,
-                        MAP_DEGREE_HEIGHT / 2 ** self.display_area_scale / 2]
+        if scale is None:
+            scale = self.display_area_scale
+        if display_area is None:
+            display_area = [MAP_DEGREE_WIDTH / 2 ** scale / 2,
+                            MAP_DEGREE_HEIGHT / 2 ** scale / 2]
         self.display_area = display_area
 
         map_params = {
@@ -180,23 +256,25 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
         }
         key = tuple(map_params.values())
         if (pix_map := self.pix_maps.get(key)) is None:
-            try:
-                response = perform_request(MAP_API_SERVER, params=map_params)
-                image = QImage().fromData(response.content)
-                pix_map = QPixmap().fromImage(image)
-                self.pix_maps[key] = pix_map
-            except RequestError:
-                pass
+            response = perform_request(MAP_API_SERVER, params=map_params)
+            image = QImage().fromData(response.content)
+            pix_map = QPixmap().fromImage(image)
+            self.pix_maps[key] = pix_map
         return pix_map
 
     def override_map_params(self):
         """Изменение параметров карты."""
-        pix_map = self.get_pix_map()
+        try:
+            pix_map = self.get_pix_map()
+        except RequestError:
+            self.print_error(BAD_RESPONSE_ERROR)
+            return
+        except Exception as e:
+            self.log_unexpected_error(e)
+            return
         if pix_map:
             self.map_label.setPixmap(pix_map)
             self.clear_info_label()
-        else:
-            self.print_error(BAD_RESPONSE_ERROR)
 
     def keyPressEvent(self, *args, **kwargs):
         key = args[0].key()
@@ -251,8 +329,8 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
             self.address_label.setText(self.address)
 
     def update_map_type(self):
-        """Обновить текущий тип карты, основываясь на выбранном пользователем в окне
-        программы типом карты."""
+        """Обновить текущий тип карты, основываясь на выбранном пользователем в
+        окне программы типом карты."""
         map_type = [MAP_TYPES[self.map_type_box.currentIndex()]]
         if self.go_names_btn.isChecked():
             map_type += [GO_NAMES_TYPE]
@@ -265,18 +343,20 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
         """Добавить метку на карту"""
         self.tags.append(f'{",".join(map(str, pos))},comma')
 
-    def get_object(self):
-        """Изменить топоним, основываясь на адресе, введённым пользователем в окне
-        программы."""
+    @queue_thread_qt
+    def get_object(self, *args):
+        """Изменить топоним, основываясь на адресе, введённым пользователем в
+        окне программы."""
         try:
-            if len(toponyms := get_toponyms(self.object_input.text())) == 0:
+            toponyms = Toponym.get_objects(self.object_input.text())
+            if not toponyms:
                 self.print_error(TOPONYM_NOT_FOUND_ERROR_MSG)
             else:
-                self.toponym = toponyms[0]
-                self.map_pos = get_pos_by_toponym(self.toponym)
+                self.map_object = toponyms[0]
+                self.map_pos = self.map_object.pos
                 self.tags.append(f'{",".join(map(str, self.map_pos))},comma')
-                self.address = get_address_by_toponym(self.toponym)
-                self.post_address = get_post_address_by_toponym(self.toponym)
+                self.address = self.map_object.address
+                self.post_address = self.map_object.post_address
                 self.set_address_label(self.post_address)
                 self.clear_info_label()
                 self.override_map_params()
