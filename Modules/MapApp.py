@@ -3,6 +3,8 @@ from PyQt5.QtWidgets import QMainWindow
 from UI.UI_MapAppMainWindow import Ui_MapAppMainWindow
 from PyQt5.Qt import QPixmap, QImage, Qt
 from Modules.MapObjects import Toponym, Organization
+import datetime
+from Modules.EasyThreadsQt import queue_thread_qt
 
 
 START_SCALE = 13
@@ -25,6 +27,7 @@ INFO_LABEL_STYLESHEET = '*{color:black;}'
 TOPONYM_NOT_FOUND_ERROR_MSG = 'Объект не найден'
 BAD_RESPONSE_ERROR = 'Ошибка при запросе'
 ORGANIZATION_NOT_FOUND_ERROR_MSG = 'Организация не найдена'
+UNEXPECTED_ERROR_MSG = 'Произошла непредвиденная ошибка'
 
 ORGANIZATIONS_SEARCH_RADIUS = 50  # Значение в метрах
 
@@ -66,6 +69,12 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
 
         self.pix_maps = {}  # Словарь с уже загруженными ранее картинками
 
+        self.first_map_load()
+
+    @queue_thread_qt
+    def first_map_load(self):
+        # Вынесено в отдельную функцию, дабы была возможность добавить
+        # многопоточность
         self.override_map_params()
 
     def object_input_return_pressed(self):
@@ -126,6 +135,7 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
         elif button == Qt.RightButton:
             self.get_organization_by_click(relative_pos)
 
+    @queue_thread_qt
     def get_organization_by_click(self, relative_pos):
         """Находит организацию в области правого клика в радиусе
         ORGANIZATIONS_SEARCH_RADIUS."""
@@ -140,6 +150,9 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
             organizations = Organization.get_objects(toponym.address)
         except RequestError:
             self.print_error(BAD_RESPONSE_ERROR)
+            return
+        except Exception as e:
+            self.log_unexpected_error(e)
             return
         if not organizations:
             self.print_error(ORGANIZATION_NOT_FOUND_ERROR_MSG)
@@ -166,6 +179,13 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
                 continue
         self.print_error(ORGANIZATION_NOT_FOUND_ERROR_MSG)
 
+    def log_unexpected_error(self, exception):
+        with open('error_log.txt', mode='a') as file:
+            time = datetime.datetime.now()
+            file.write(f'{time}: {exception}\n')
+        self.print_error(UNEXPECTED_ERROR_MSG)
+
+    @queue_thread_qt
     def get_object_by_click(self, relative_pos):
         """Метод принимает на вход относительную позицию точки на карте
         (относительные координаты показывают, какую часть от области показа
@@ -178,6 +198,9 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
             toponyms = Toponym.get_objects(x, y)
         except RequestError:
             self.print_error(BAD_RESPONSE_ERROR)
+            return
+        except Exception as e:
+            self.log_unexpected_error(e)
             return
         for toponym in toponyms:
             pos = toponym.pos
@@ -233,23 +256,25 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
         }
         key = tuple(map_params.values())
         if (pix_map := self.pix_maps.get(key)) is None:
-            try:
-                response = perform_request(MAP_API_SERVER, params=map_params)
-                image = QImage().fromData(response.content)
-                pix_map = QPixmap().fromImage(image)
-                self.pix_maps[key] = pix_map
-            except RequestError:
-                pass
+            response = perform_request(MAP_API_SERVER, params=map_params)
+            image = QImage().fromData(response.content)
+            pix_map = QPixmap().fromImage(image)
+            self.pix_maps[key] = pix_map
         return pix_map
 
     def override_map_params(self):
         """Изменение параметров карты."""
-        pix_map = self.get_pix_map()
+        try:
+            pix_map = self.get_pix_map()
+        except RequestError:
+            self.print_error(BAD_RESPONSE_ERROR)
+            return
+        except Exception as e:
+            self.log_unexpected_error(e)
+            return
         if pix_map:
             self.map_label.setPixmap(pix_map)
             self.clear_info_label()
-        else:
-            self.print_error(BAD_RESPONSE_ERROR)
 
     def keyPressEvent(self, *args, **kwargs):
         key = args[0].key()
@@ -318,7 +343,8 @@ class MapApp(Ui_MapAppMainWindow, QMainWindow):
         """Добавить метку на карту"""
         self.tags.append(f'{",".join(map(str, pos))},comma')
 
-    def get_object(self):
+    @queue_thread_qt
+    def get_object(self, *args):
         """Изменить топоним, основываясь на адресе, введённым пользователем в
         окне программы."""
         try:
