@@ -85,6 +85,7 @@ class Ui_MapAppMainWindow(object):
         self.address_label.setText("")
         self.address_label.setScaledContents(False)
         self.address_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.address_label.setWordWrap(False)
         self.address_label.setObjectName("address_label")
         self.horizontalLayout_2.addWidget(self.address_label)
         spacerItem1 = QtWidgets.QSpacerItem(50, 10, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)

@@ -1,10 +1,16 @@
 import requests
+import math
 from Modules.ApiKeys import *
 from multipledispatch import dispatch
 from numbers import Number
 
+
 MAP_API_SERVER = 'http://static-maps.yandex.ru/1.x/'
-GEOCODER_API_SERVER = 'https://geocode-maps.yandex.ru/1.x'
+GEOCODER_API_SERVER = 'https://geocode-maps.yandex.ru/1.x/'
+GEOSEARCH_API_SERVER = 'https://search-maps.yandex.ru/v1/'
+
+METER_IN_DEGREE_OF_LONGITUDE = 1 / (111 * 1000)
+METER_IN_DEGREE_OF_LATITUDE = 1 / (111.111 * 1000)
 
 
 class ToponymNotFound(Exception):
@@ -110,7 +116,7 @@ def get_pos(geocode, **kwargs) -> [float, float]:
     return list(map(float, toponym_coodrinates.split(' ')))
 
 
-def get_address(geocode):
+def get_address_by_geocode(geocode):
     geocoder_params = {'apikey': GEOCODER_API_KEY,
                        'geocode': geocode,
                        'format': 'json'}
@@ -134,3 +140,81 @@ def get_tile(tile_w, tile_h, pos):
 def format_map_view_box(view_box):
     # Не используется, нужно было при попытке решить 11 задачу
     return '~'.join(map(lambda p: ','.join(map(str, p)), view_box))
+
+
+@dispatch(str)
+def get_organizations(text, **kwargs):
+    geosearch_params = {
+        'apikey': GEOSEARCH_API_KEY,
+        'text': text,
+        'type': 'biz',
+        'lang': 'ru_RU'
+    }
+    for k, v in kwargs.items():
+        geosearch_params[k] = v
+    response = perform_request(GEOSEARCH_API_SERVER, params=geosearch_params)
+    json_response = response.json()
+    return json_response['features']
+
+
+@dispatch(Number, Number)
+def get_organizations(x, y, **kwargs):
+    geosearch_params = {
+        'apikey': GEOSEARCH_API_KEY,
+        'text': '*',
+        'type': 'biz',
+        'lang': 'ru_RU',
+        'll': ','.join(map(str, [x, y]))
+    }
+    for k, v in kwargs.items():
+        geosearch_params[k] = v
+    response = perform_request(GEOSEARCH_API_SERVER, params=geosearch_params)
+    json_response = response.json()
+    return json_response['features']
+
+
+# radius выражается в метрах
+def get_organizations_in_radius(x, y, radius):
+    search_area = (radius * METER_IN_DEGREE_OF_LONGITUDE,
+                   radius * METER_IN_DEGREE_OF_LATITUDE)
+    params = {
+        'spn': ','.join(map(str, search_area))
+    }
+    return get_organizations(x, y, **params)
+
+
+def lonlat_distance(a, b):
+
+    degree_to_meters_factor = 111 * 1000 # 111 километров в метрах
+    a_lon, a_lat = a
+    b_lon, b_lat = b
+
+    # Берем среднюю по широте точку и считаем коэффициент для нее.
+    radians_lattitude = math.radians((a_lat + b_lat) / 2.)
+    lat_lon_factor = math.cos(radians_lattitude)
+
+    # Вычисляем смещения в метрах по вертикали и горизонтали.
+    dx = abs(a_lon - b_lon) * degree_to_meters_factor * lat_lon_factor
+    dy = abs(a_lat - b_lat) * degree_to_meters_factor
+
+    # Вычисляем расстояние между точками.
+    distance = math.sqrt(dx * dx + dy * dy)
+
+    return distance
+
+
+def is_pos_in_radius(center, pos, radius):
+    return lonlat_distance(center, pos) <= radius
+
+
+def get_pos_by_organization(organization):
+    return organization["geometry"]["coordinates"]
+
+
+def is_organization_in_radius(center, organization, radius):
+    pos = get_pos_by_organization(organization)
+    return is_pos_in_radius(center, pos, radius)
+
+
+def get_address_by_organization(organization):
+    return organization["properties"]["CompanyMetaData"]["address"]
